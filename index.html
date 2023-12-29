@@ -1,9 +1,66 @@
 <!DOCTYPE html>
-<header>
-
-</header>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Details</title>
+</head>
 <body>
-    <p>hello lunc community</p>
-</body>
+    <div id="transactionDetails" style="background-color: #f5f5f5; padding: 20px; border: 1px solid #ddd; margin: 10px;">
+        <h2>Transaction Details</h2>
+    </div>
 
-</html>
+    <script>
+        // Replace the PHP code with JavaScript logic to fetch and display data
+        const targetAddress = 'terra1sk06e3dyexuq4shw77y3dsv480xv42mq73anxu';
+        const token = 'uusd'; // Change to 'uusd' for UST
+        const offset = 0;
+        const limit = 10;
+        const imageURL = 'https://www.freepnglogos.com/uploads/minecraft-logo-png-16.png';
+        const starImageURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAIAAAB/UwMIAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG8SURBVDhPbZJhT9NQFIbPPe26yCeDwYhb9KP/h4DIN/8ViTHhgwZEUH+Ev0BIIMG1tGMblqGy3tuuty2d77XbGGPN2/T23Pc5556bQ5n0HypRLhHnqj0Xr7SA0ZHvXl0QUb9/PrdVaRGjAkF085GEEFjP7UILGFRwalb4vskElrTy5g3TVRq3tbwYqgA+mMPtVUMQI56pDuJTJ52dHUGnJz+ePGs+Xmk8bbyEL+ty+G5V7xoIcWjl+YtW68h1j4PglNBxla/wrZHuFUVRlqXuUtaiwqPcszPXKr/X+2sOPPChQ3M2YX64Jjg/IJD6nAtvLH1A2SH/3bKFsExits3Z8AJ1aktVmvQzMFS4Y65eGzPeR/WlcT/VJ5NBLFvYi76K4naUIr5PeYfAhJtCsJNGnYlz5t7yKGBySp/ztgAA6U8UrjMYi+x0YoNmGNOYI79xuke3X9gmS+6QPjR1iOzZObrHEDuj/Xq0icOPn+4G/XkjyHJmB+KOQT/6wzIxsvIw/jWMexDWmKCfb19p2Z06xwyKqCT8n5oThW2TFbkTeV1d2mDhHaiBd/O7l0ic+95cplH7suPGg0kd6f8D1S4eqNPZdakAAAAASUVORK5CYII=';
+
+        // Function to add star images based on powers of 10
+        function addStars(amount) {
+            const powerOf10 = Math.floor(Math.log10(amount));
+            const starImage = `<img src="${starImageURL}" alt="star" style="width: 16px; height: 16px;">`;
+            return `${amount} ${token}${powerOf10 > 0 ? ' ' + starImage.repeat(powerOf10) : ''}`;
+        }
+
+        // Fetch the transaction history from the Terra API
+        fetch(`https://terra-classic-fcd.publicnode.com/v1/txs?offset=${offset}&limit=${limit}&account=${targetAddress}`)
+            .then(response => response.json())
+            .then(transactions => {
+                const transactionDetailsDiv = document.getElementById('transactionDetails');
+
+                // Sort transactions based on Luna amount sent
+                transactions.txs.sort((a, b) => {
+                    const amountA = (a.tx.value.msg
+                        .filter(msg => msg.type === 'bank/MsgSend' && msg.value.amount[0].denom === token)
+                        .map(msg => msg.value.amount[0].amount / 1_000_000)[0]) || 0;
+
+                    const amountB = (b.tx.value.msg
+                        .filter(msg => msg.type === 'bank/MsgSend' && msg.value.amount[0].denom === token)
+                        .map(msg => msg.value.amount[0].amount / 1_000_000)[0]) || 0;
+
+                    return amountA - amountB;
+                });
+
+                transactions.txs.forEach(transaction => {
+                    const date = new Date(transaction.timestamp).toLocaleDateString();
+
+                    const transactionDiv = document.createElement('div');
+                    transactionDiv.style.border = '1px solid #ccc';
+                    transactionDiv.style.padding = '10px';
+                    transactionDiv.style.marginBottom = '10px';
+
+                    // Get amount sent
+                    const amount = (transaction.tx.value.msg
+                        .filter(msg => msg.type === 'bank/MsgSend' && msg.value.amount[0].denom === token)
+                        .map(msg => msg.value.amount[0].amount / 1_000_000)[0]) || 0;
+
+                    // Get sender address
+                    const senderAddress = (transaction.tx.value.msg
+                        .filter(msg => msg.type === 'bank/MsgSend')[0].value.from_address) || 'N/A';
+
+                    transactionDiv.innerHTML = `
+                        <strong>Transaction ID:</strong> ${transaction.tx
